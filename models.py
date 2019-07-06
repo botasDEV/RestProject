@@ -1,10 +1,9 @@
 from app import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin
 
 
-class Client(UserMixin, db.Model):
+class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), index=True, unique=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -12,7 +11,7 @@ class Client(UserMixin, db.Model):
     password = db.Column(db.String(128))
     projects = db.relationship("Project", backref="creator", lazy="dynamic")
 
-    def __init__(self, name, username, email):
+    def __init__(self, name, username, email, password):
         self.name = name
         self.username = username
         self.email = email
