@@ -5,3 +5,4 @@ flask_jwt_extended
 itsdangerous
 werkzeug
 sqlalchemy
+uwsgi
