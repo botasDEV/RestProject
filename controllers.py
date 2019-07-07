@@ -125,3 +125,146 @@ class ProjectsController:
             return jsonify({'error': 'There is no project with this ID for this user'}), 404
 
         return jsonify(project.serialize())
+
+    @staticmethod
+    def put(project_id):
+        try:
+            title = request.json['title']
+
+            current_client = models.Client.query.filter_by(username=get_jwt_identity()).first()
+            project = models.Project.query.filter_by(client_id=current_client.id, id=project_id).first()
+
+            if project is None:
+                return jsonify({'error': 'You don\'t have permissions to do this.'}), 401
+
+            project.title = title
+            db.session.add(project)
+            db.session.commit()
+
+            return jsonify(project.serialize())
+        except KeyError as e:
+            db.session.rollback()
+            return jsonify({'error': 'Missing ' + ','.join(e.args)}), 400
+
+    @staticmethod
+    def delete(project_id):
+        current_client = models.Client.query.filter_by(username=get_jwt_identity()).first()
+        project = models.Project.query.filter_by(client_id=current_client.id, id=project_id).first()
+
+        if project is None:
+            return jsonify({'error': 'You don\'t have permissions to do this.'}), 401
+
+        db.session.delete(project)
+        db.session.commit()
+
+        return jsonify('Project removed successfully')
+
+
+class TasksController:
+    @staticmethod
+    def store(project_id):
+        try:
+            current_client = models.Client.query.filter_by(username=get_jwt_identity()).first()
+            project = models.Project.query.filter_by(client_id=current_client.id, id=project_id).first()
+
+            if project is None:
+                return jsonify({'error': 'You don\'t have permissions to do this.'}), 401
+
+            title = request.json['title']
+
+            new_task = models.Task(title, project_id)
+            db.session.add(new_task)
+            db.session.commit()
+
+            return jsonify({'task': new_task.id})
+        except IntegrityError as e:
+            db.session.rollback()
+            return jsonify({'error': e.orig.args[0]}), 400
+        except KeyError as e:
+            db.session.rollback()
+            return jsonify({'error': 'Missing ' + ','.join(e.args)}), 400
+
+    @staticmethod
+    def list(project_id):
+        current_client = models.Client.query.filter_by(username=get_jwt_identity()).first()
+        project = models.Project.query.filter_by(client_id=current_client.id, id=project_id).first()
+
+        if project is None:
+            return jsonify({'error': 'You don\'t have permissions to do this.'}), 401
+
+        tasks = models.Task.query.filter_by(project_id=project.id).all()
+
+        tasks_list = []
+        for task in tasks:
+            tasks_list.append(task.serialize())
+
+        return jsonify(tasks_list)
+
+    @staticmethod
+    def get(project_id, task_id):
+        current_client = models.Client.query.filter_by(username=get_jwt_identity()).first()
+        project = models.Project.query.filter_by(client_id=current_client.id, id=project_id).first()
+
+        if project is None:
+            return jsonify({'error': 'You don\'t have permissions to do this.'}), 401
+
+        task = models.Task.query.filter_by(project_id=project.id, id=task_id).first()
+
+        if task is None:
+            return jsonify({'error': 'There is no task with this ID for this project'}), 404
+
+        return jsonify(task.serialize())
+
+    @staticmethod
+    def put(project_id, task_id):
+        try:
+            title = request.json['title']
+            order = request.json['order']
+            completed = request.json['completed']
+
+            current_client = models.Client.query.filter_by(username=get_jwt_identity()).first()
+            project = models.Project.query.filter_by(client_id=current_client.id, id=project_id).first()
+
+            if project is None:
+                return jsonify({'error': 'You don\'t have permissions to do this.'}), 401
+
+            task = models.Task.query.filter_by(project_id=project.id, id=task_id).first()
+
+            if task is None:
+                return jsonify({'error': 'There is no task with this ID for this project'}), 404
+
+            if task.completed:
+                return jsonify({'error': 'This task is closed so it is not possible to change it anymore.'}), 401
+
+            task.title = title
+            task.order = order
+            task.completed = completed
+
+            db.session.add(task)
+            db.session.commit()
+
+            return jsonify(task.serialize())
+        except KeyError as e:
+            db.session.rollback()
+            return jsonify({'error': 'Missing ' + ','.join(e.args)}), 400
+
+    @staticmethod
+    def delete(project_id, task_id):
+        current_client = models.Client.query.filter_by(username=get_jwt_identity()).first()
+        project = models.Project.query.filter_by(client_id=current_client.id, id=project_id).first()
+
+        if project is None:
+            return jsonify({'error': 'You don\'t have permissions to do this.'}), 401
+
+        task = models.Task.query.filter_by(project_id=project.id, id=task_id).first()
+
+        if task is None:
+            return jsonify({'error': 'There is no task with this ID for this project'}), 404
+
+        if task.completed:
+            return jsonify({'error': 'This task cannot be deleted since it is complete.'}), 401
+
+        db.session.delete(task)
+        db.session.commit()
+
+        return jsonify('Task removed successfully')

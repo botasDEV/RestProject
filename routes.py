@@ -34,7 +34,6 @@ def add_routes(app):
     """
     PROJECTS ROUTES
     """
-
     @app.route('/api/projects', methods=['POST'])
     @jwt_required
     def create_project():
@@ -50,4 +49,40 @@ def add_routes(app):
     def get_projects_by_id(project_id):
         return controllers.ProjectsController.get(project_id)
 
+    @app.route('/api/projects/<project_id>', methods=['PUT'])
+    @jwt_required
+    def update_project(project_id):
+        return controllers.ProjectsController.put(project_id)
 
+    @app.route('/api/projects/<project_id>', methods=['DELETE'])
+    @jwt_required
+    def delete_project(project_id):
+        return controllers.ProjectsController.delete(project_id)
+
+    """
+    TASKS ROUTES
+    """
+    @app.route('/api/projects/<project_id>/tasks', methods=['POST'])
+    @jwt_required
+    def create_task(project_id):
+        return controllers.TasksController.store(project_id)
+
+    @app.route('/api/projects/<project_id>/tasks', methods=['GET'])
+    @jwt_required
+    def list_tasks(project_id):
+        return controllers.TasksController.list(project_id)
+
+    @app.route('/api/projects/<project_id>/tasks/<task_id>', methods=['GET'])
+    @jwt_required
+    def get_task(project_id, task_id):
+        return controllers.TasksController.get(project_id, task_id)
+
+    @app.route('/api/projects/<project_id>/tasks/<task_id>', methods=['PUT'])
+    @jwt_required
+    def update_task(project_id, task_id):
+        return controllers.TasksController.put(project_id, task_id)
+
+    @app.route('/api/projects/<project_id>/tasks/<task_id>', methods=['DELETE'])
+    @jwt_required
+    def delete_task(project_id, task_id):
+        return controllers.TasksController.delete(project_id, task_id)

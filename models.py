@@ -4,8 +4,6 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
-from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required,\
-                                jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
 
 
 class Client(db.Model):
@@ -15,6 +13,8 @@ class Client(db.Model):
     email = db.Column(db.String(120), index=True, unique=True)
     password = db.Column(db.String(128))
     projects = db.relationship("Project", backref="creator", lazy="dynamic")
+    creation_date = db.Column(db.DateTime, index=True, unique=True, default=datetime.utcnow)
+    last_update = db.Column(db.DateTime, index=True, unique=True, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __init__(self, name, username, email, password):
         self.name = name
@@ -60,15 +60,13 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(64), index=True, unique=True)
     creation_date = db.Column(db.DateTime, index=True, unique=True, default=datetime.utcnow)
-    last_update = db.Column(db.DateTime, index=True, unique=True, default=datetime.utcnow)
+    last_update = db.Column(db.DateTime, index=True, unique=True, default=datetime.utcnow, onupdate=datetime.utcnow)
     client_id = db.Column(db.String(24), db.ForeignKey("client.id"))
     tasks = db.relationship("Task", backref="parent", lazy="dynamic")
 
     def __init__(self, title, client_id):
         self.title = title
         self.client_id = client_id
-        current_client = Client.query.filter_by(username=get_jwt_identity()).first()
-        self.user_id = current_client.id
 
     def __repr__(self):
         return '<Project {}>'.format(self.title)
@@ -87,12 +85,30 @@ class Task(db.Model):
     title = db.Column(db.String(64), index=True, unique=True)
     order = db.Column(db.String(30), index=True, unique=True)
     creation_date = db.Column(db.DateTime, index=True, unique=True, default=datetime.utcnow)
+    last_update = db.Column(db.DateTime, index=True, unique=True, default=datetime.utcnow, onupdate=datetime.utcnow)
     due_date = db.Column(db.DateTime, index=True, unique=True, default=datetime.utcnow)
-    completed = db.Column(db.Boolean, index=True)
+    completed = db.Column(db.Boolean, index=True, default=False)
     project_id = db.Column(db.String(24), db.ForeignKey("project.id"))
+
+    def __init__(self, title, project_id):
+        self.title = title
+        self.order = len(Task.query.all()) + 1
+        self.project_id = project_id
 
     def __repr__(self):
         return '<Task {}>'.format(self.title)
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'created_at': self.creation_date,
+            'updated_at': self.last_update,
+            'due_date': self.due_date,
+            'completed': self.completed,
+            'project_id': self.project_id,
+            'order': self.order
+        }
 
 
 class TokenRevoked(db.Model):
