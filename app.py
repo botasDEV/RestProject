@@ -43,4 +43,4 @@ def check_if_token_in_blacklist(token):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=80)
