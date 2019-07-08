@@ -1,10 +1,15 @@
 import controllers
+from flask import jsonify
 from flask_httpauth import HTTPBasicAuth
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required,\
                                 jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
 
 
 def add_routes(app):
+    @app.route('/', methods=['GET'])
+    def root():
+        return jsonify({"message": "Yes it works!"})
+
     """
     CLIENTS ROUTES
     """
